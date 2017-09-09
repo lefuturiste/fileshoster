@@ -24,7 +24,6 @@ $app->get('/{uuid}', \App\Controllers\FilesApiController::class . ':file')->setN
 $app->group('/api', function (){
 	$this->group('/files', function (){
 		$this->post('/', \App\Controllers\FilesApiController::class . ':store')->setName('files.store');
-		$this->post('/update/{uuid}', \App\Controllers\FilesApiController::class . ':update')->setName('files.update');
 		$this->get('/{uuid}', \App\Controllers\FilesApiController::class . ':show')->setName('files.show');
 		$this->delete('/{uuid}', \App\Controllers\FilesApiController::class . ':destroy')->setName('files.destroy');
 	});

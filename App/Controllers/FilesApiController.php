@@ -65,4 +65,48 @@ class FilesApiController extends Controller
 			return $this->container['notFoundHandler']($request, $response);
 		}
 	}
+
+	public function show(ServerRequestInterface $request, ResponseInterface $response, $args)
+	{
+		//verify if file exist
+		$file = $this->db->fetchRow('SELECT * FROM files WHERE uuid = :uuid', [
+			'uuid' => $args['uuid']
+		]);
+		if (!empty($file)) {
+			return $response->withJson([
+				'success' => true,
+				'created' => true,
+				'uuid' => $file['uuid'],
+				'name' => $file['file_name'],
+				'extension' => $file['extension'],
+				'path' => $file['path'],
+				'created_at' => $file['created_at']
+			]);
+		}else{
+			return $this->container['notFoundHandler']($request, $response);
+		}
+	}
+
+	public function destroy(ServerRequestInterface $request, ResponseInterface $response, $args)
+	{
+		//verify if file exist
+		$file = $this->db->fetchRow('SELECT uuid, path FROM files WHERE uuid = :uuid', [
+			'uuid' => $args['uuid']
+		]);
+		if (!empty($file)) {
+			//do delete in bdd
+			$this->delete('files', [
+				'uuid' => $args['uuid']
+			]);
+			//do delete in file
+			unlink($file['path']);
+
+			return $response->withJson([
+				'success' => true,
+				'deleted' => true
+			]);
+		}else{
+			return $this->container['notFoundHandler']($request, $response);
+		}
+	}
 }
