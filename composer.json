@@ -1,0 +1,25 @@
+{
+  "name": "lefuturiste/fileshoster",
+  "description": "A simple api fileshoster powered by php. Full featured and simple installation.",
+  "type": "project",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "lefuturiste",
+      "email": "contact@lefuturiste.fr"
+    }
+  ],
+  "require": {
+    "slim/slim": "^3.8",
+    "simplon/mysql": "^2.2",
+    "vlucas/phpdotenv": "^2.4",
+    "symfony/console": "^3.3",
+    "uploader/uploader": "^1.4",
+    "guzzlehttp/guzzle": "^6.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "App"
+    }
+  }
+}
