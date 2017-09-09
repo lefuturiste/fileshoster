@@ -41,6 +41,7 @@ class FilesApiController extends Controller
 
 			return $response->withJson([
 				'success' => true,
+				'created' => true,
 				'uuid' => $uuid,
 				'extension' => $upload->getExtension(),
 				'name' => $name,
@@ -74,8 +75,6 @@ class FilesApiController extends Controller
 		]);
 		if (!empty($file)) {
 			return $response->withJson([
-				'success' => true,
-				'created' => true,
 				'uuid' => $file['uuid'],
 				'name' => $file['file_name'],
 				'extension' => $file['extension'],
@@ -95,7 +94,7 @@ class FilesApiController extends Controller
 		]);
 		if (!empty($file)) {
 			//do delete in bdd
-			$this->delete('files', [
+			$this->db->delete('files', [
 				'uuid' => $args['uuid']
 			]);
 			//do delete in file
