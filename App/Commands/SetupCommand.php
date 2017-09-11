@@ -20,7 +20,7 @@ class SetupCommand extends Command
 	{
 		$io = new SymfonyStyle($input, $output);
 
-		$io->text('Welcome on urlshortner installer!');
+		$io->text('Welcome on fileshoster installer!');
 		//1. create a .env file
 		//ask database host, user, paswd and database
 
@@ -52,8 +52,6 @@ class SetupCommand extends Command
 
 		$io->success('Ok success to set database configuration!');
 
-
-
 		$io->section('Api configuration');
 
 		$api_auth = $io->ask("Would you like to generate your api username and password ?", true);
@@ -69,8 +67,11 @@ class SetupCommand extends Command
 		}
 
 		$io->success('Ok success to set api authentification!');
-		$envConfig .= "API_AUTH={$api_username}:{$api_password}\n";
-
+		$authConfig = Yaml::dump([
+			"auth" => [
+				"{\$api_username}:{\$api_password}"
+			]
+		]);
 
 		$io->section('Other configuration');
 		$base_redirect = $io->ask('What is your base redirect url?', 'http://example.com');
@@ -83,12 +84,19 @@ class SetupCommand extends Command
 		}
 		$envConfig .= "APP_DEBUG={$app_debug}\nBASE_REDIRECT_URL={$base_redirect}";
 
+		//write .env
 		$File = ".env";
 		$Handle = fopen($File, 'w');
 		fwrite($Handle, $envConfig);
 		fclose($Handle);
 
-		$io->success('Success creating .env file!');
+		//write auth.yml
+		$File = "auth.yml";
+		$Handle = fopen($File, 'w');
+		fwrite($Handle, $authConfig);
+		fclose($Handle);
+
+		$io->success('Success creating .env & auth.yml file!');
 
 		//import mysql scheme
 		if ($mysql_enable){
@@ -100,18 +108,16 @@ class SetupCommand extends Command
 				$db_database
 			);
 
-			$dbConn->executeSql("CREATE TABLE `urls` (
-							  `id` int(11) NOT NULL,
-							  `uuid` varchar(255) NOT NULL,
-							  `redirect` varchar(255) NOT NULL,
-							  `created_at` datetime NOT NULL,
-							  `updated_at` datetime NOT NULL
-							) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-							");
-			$dbConn->executeSql("ALTER TABLE `urls`
-  ADD PRIMARY KEY (`id`);");
-			$dbConn->executeSql("ALTER TABLE `urls`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;");
+			$dbConn->executeSql("CREATE TABLE IF NOT EXISTS `files` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `uuid` varchar(255) DEFAULT '0',
+  `file_name` varchar(255) DEFAULT '0',
+  `path` varchar(255) DEFAULT '0',
+  `extension` varchar(255) DEFAULT '0',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;");
 
 			$io->success('Success creating mysql table!');
 		}
