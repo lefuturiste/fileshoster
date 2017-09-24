@@ -1,7 +1,8 @@
 <?php
 return [
 	'app_debug' => getenv('APP_DEBUG'),
-	'files_path' => '../files',
+	'base_url' => getenv('BASE_URL'),
+	'files_path' => getenv('FILES_PATH'),
 	'allowed_files' => [
 		'application/octet-stream',
 		'image/jpeg',

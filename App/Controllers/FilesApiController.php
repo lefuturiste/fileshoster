@@ -46,6 +46,7 @@ class FilesApiController extends Controller
 				'extension' => $upload->getExtension(),
 				'name' => $name,
 				'path' => $upload->getDestination(),
+				'url' => $this->container->config['base_url'] . '/' . $uuid
 			]);
 		} catch (Exception $e) {
 			echo $e->getMessage();
@@ -61,7 +62,12 @@ class FilesApiController extends Controller
 		if (!empty($file)) {
 			$newStream = new \GuzzleHttp\Psr7\LazyOpenStream($this->container->config['files_path'] . $file['path'], 'r');
 
-			return $response->withBody($newStream);
+			//get file type
+			$finfo = finfo_open(FILEINFO_MIME_TYPE);
+			$fileType = finfo_file($finfo, $this->container->config['files_path'] . $file['path']);
+			finfo_close($finfo);
+
+			return $response->withBody($newStream)->withHeader('Content-Type', $fileType);
 		}else{
 			return $this->container['notFoundHandler']($request, $response);
 		}
@@ -77,6 +83,7 @@ class FilesApiController extends Controller
 			return $response->withJson([
 				'uuid' => $file['uuid'],
 				'name' => $file['file_name'],
+				'url' => $this->container->config['base_url'] . '/' . $file['uuid'],
 				'extension' => $file['extension'],
 				'path' => $file['path'],
 				'created_at' => $file['created_at']

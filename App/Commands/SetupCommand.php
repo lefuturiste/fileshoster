@@ -56,32 +56,34 @@ class SetupCommand extends Command
 
 		$api_auth = $io->ask("Would you like to generate your api username and password ?", true);
 
-		if ($api_auth == true){
+		if ($api_auth == true) {
 			$api_username = strtoupper(bin2hex(random_bytes(10)));
 			$api_password = bin2hex(random_bytes(20));
 
 			$io->note("Your api username is \"{$api_username}\" and your api password is \"{$api_password}\"");
-		}else{
+		} else {
 			$api_username = $io->ask('What is your api username?', 'USERNAME');
 			$api_password = $io->ask('What is your api password?', 'PASSWORD');
 		}
 
-		$io->success('Ok success to set api authentification!');
 		$authConfig = Yaml::dump([
 			"auth" => [
-				"{\$api_username}:{\$api_password}"
+				"{$api_username}:{$api_password}"
 			]
 		]);
+		$io->success('Ok success to set api authentification!');
 
 		$io->section('Other configuration');
 		$app_debug = $io->ask("What is app debug mode ? (1 = debug mode) (0 = production mode)", 0);
+		$base_url = $io->ask("What is app base url ?", 'http://example.org');
+		$path_files = $io->ask("What is absolute path for destination files's directory ?", '/home/web/example/files');
 
-		if ($app_debug){
+		if ($app_debug) {
 
 			$io->warning('Warning: App debug is enabled please be careful, all errors will be showed');
 
 		}
-		$envConfig .= "APP_DEBUG={$app_debug}";
+		$envConfig .= "APP_DEBUG={$app_debug}\nBASE_URL={$base_url}\nPATH_FILES={$path_files}";
 
 		//write .env
 		$File = ".env";
@@ -98,7 +100,7 @@ class SetupCommand extends Command
 		$io->success('Success creating .env & auth.yml file!');
 
 		//import mysql scheme
-		if ($mysql_enable){
+		if ($mysql_enable) {
 			//connection à la bdd
 			$dbConn = new \Simplon\Mysql\Mysql(
 				$db_host,
