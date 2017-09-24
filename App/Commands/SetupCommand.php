@@ -74,7 +74,6 @@ class SetupCommand extends Command
 		]);
 
 		$io->section('Other configuration');
-		$base_redirect = $io->ask('What is your base redirect url?', 'http://example.com');
 		$app_debug = $io->ask("What is app debug mode ? (1 = debug mode) (0 = production mode)", 0);
 
 		if ($app_debug){
@@ -82,7 +81,7 @@ class SetupCommand extends Command
 			$io->warning('Warning: App debug is enabled please be careful, all errors will be showed');
 
 		}
-		$envConfig .= "APP_DEBUG={$app_debug}\nBASE_REDIRECT_URL={$base_redirect}";
+		$envConfig .= "APP_DEBUG={$app_debug}";
 
 		//write .env
 		$File = ".env";
