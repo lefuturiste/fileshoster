@@ -15,7 +15,8 @@
     "vlucas/phpdotenv": "^2.4",
     "symfony/console": "^3.3",
     "uploader/uploader": "^1.4",
-    "guzzlehttp/guzzle": "^6.3"
+    "guzzlehttp/guzzle": "^6.3",
+    "symfony/yaml": "^3.3"
   },
   "autoload": {
     "psr-4": {
