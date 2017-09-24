@@ -2,7 +2,7 @@
 return [
 	'app_debug' => getenv('APP_DEBUG'),
 	'base_url' => getenv('BASE_URL'),
-	'files_path' => getenv('FILES_PATH'),
+	'files_path' => getenv('PATH_FILES'),
 	'allowed_files' => [
 		'application/octet-stream',
 		'image/jpeg',
