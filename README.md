@@ -1,6 +1,6 @@
-# Url Shortener
+# Files Hoster
 
-Simple php urlshortener based on slimframework3.
+Simple php files hoster api based on slimframework3.
 
 No configuration and no more code, this is like a CMS website
 
@@ -8,18 +8,18 @@ No configuration and no more code, this is like a CMS website
 
 ### Server Requirement
 
-Require PHP 7.0 or higher
+Require PHP 7.1 or higher
 
 Require Mysql 5.5 or higher
 
 ### Install with composer
 
 Do a: 
-``composer create-project lefuturiste/urlshortener``
+``composer create-project lefuturiste/fileshoster``
 for download the project
 
 Move in directory: 
-``cd urlshortener``
+``cd fileshoster``
 
 Run command line installer
 ``php installer setup``
@@ -49,8 +49,4 @@ Please read the wiki for see all usages.
 
 Open an issue on this repository.
 
-## Contributing
- 
- For help everyone you can view the projet on Trello: https://trello.com/b/TwYu37PU/urlshortner
- 
 ## Enjoy !
