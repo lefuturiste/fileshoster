@@ -78,7 +78,6 @@ class SetupCommand extends Command
 		$app_debug = $io->ask("What is app debug mode ? (1 = debug mode) (0 = production mode)", 0);
 		$base_url = $io->ask("What is app base url ?", 'http://example.org');
 		$path_files = $io->ask("What is absolute path for destination files's directory ?", '/home/web/example/files');
-
 		if ($app_debug) {
 
 			$io->warning('Warning: App debug is enabled please be careful, all errors will be showed');
@@ -116,6 +115,8 @@ class SetupCommand extends Command
   `file_name` varchar(255) DEFAULT '0',
   `path` varchar(255) DEFAULT '0',
   `extension` varchar(255) DEFAULT '0',
+  `private` varchar(255) DEFAULT '0',
+  `user` varchar(255) DEFAULT '0',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)

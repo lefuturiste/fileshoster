@@ -9,8 +9,26 @@ use Uploader\Uploader;
 
 class FilesApiController extends Controller
 {
+	/**
+	 * Store file
+	 *
+	 * request: POST
+	 * body:
+	 * - file
+	 * - private (true|false)
+	 *
+	 * @param ServerRequestInterface $request
+	 * @param ResponseInterface $response
+	 * @return mixed
+	 */
 	public function store(ServerRequestInterface $request, ResponseInterface $response)
 	{
+		if (isset($request->getParsedBody()['private'])){
+			$private = $request->getParsedBody()['private'];
+		}else{
+			$private = false;
+		}
+
 		$uuid = uniqid();
 		$uploader = $this->container->uploader;
 
@@ -22,7 +40,6 @@ class FilesApiController extends Controller
 			->setExtension(function ($upload) {
 				return strtolower($upload->getExtension());
 			});
-
 		try {
 			//save file
 			$upload->save();
@@ -35,7 +52,9 @@ class FilesApiController extends Controller
 				'uuid' => $uuid,
 				'file_name' => $name,
 				'extension' => $upload->getExtension(),
-				'path' => $upload->getDestination(),
+				'path' => str_replace('/', '', $upload->getDestination()),
+				'private' => $private,
+				'user' => $_SERVER['PHP_AUTH_USER'],
 				'created_at' => Time::now()
 			]);
 
@@ -43,9 +62,10 @@ class FilesApiController extends Controller
 				'success' => true,
 				'created' => true,
 				'uuid' => $uuid,
+				'user' => $_SERVER['PHP_AUTH_USER'],
 				'extension' => $upload->getExtension(),
 				'name' => $name,
-				'path' => $upload->getDestination(),
+				'path' => str_replace('/', '', $upload->getDestination()),
 				'url' => $this->container->config['base_url'] . '/' . $uuid
 			]);
 		} catch (Exception $e) {
@@ -53,6 +73,16 @@ class FilesApiController extends Controller
 		}
 	}
 
+	/**
+	 * Get true file
+	 *
+	 * request: GET
+	 *
+	 * @param ServerRequestInterface $request
+	 * @param ResponseInterface $response
+	 * @param $args
+	 * @return static
+	 */
 	public function file(ServerRequestInterface $request, ResponseInterface $response, $args)
 	{
 		//verify is file is good
@@ -60,6 +90,13 @@ class FilesApiController extends Controller
 			'uuid' => $args['uuid']
 		]);
 		if (!empty($file)) {
+			//if the file is private
+			if ($file['private']) {
+				return $response->withStatus(401)->withJson([
+					'success' => false,
+					'error' => 'Not authorised'
+				]);
+			}
 			$newStream = new \GuzzleHttp\Psr7\LazyOpenStream($this->container->config['files_path'] . $file['path'], 'r');
 
 			//get file type
@@ -73,6 +110,52 @@ class FilesApiController extends Controller
 		}
 	}
 
+	public function download(ServerRequestInterface $request, ResponseInterface $response, $args)
+	{
+		//verify is file is good
+		$file = $this->db->fetchRow('SELECT * FROM files WHERE uuid = :uuid', [
+			'uuid' => $args['uuid']
+		]);
+		if (!empty($file)) {
+			//if the file is private
+			if ($file['private']) {
+				if (isset($_SERVER['PHP_AUTH_USER'])){
+					if ($file['user'] != $_SERVER['PHP_AUTH_USER']){
+						return $response->withStatus(401)->withJson([
+							'success' => false,
+							'error' => 'Not authorised'
+						]);
+					}
+				}else{
+					return $response->withStatus(401)->withJson([
+						'success' => false,
+						'error' => 'Not authorised'
+					]);
+				}
+			}
+			$newStream = new \GuzzleHttp\Psr7\LazyOpenStream($this->container->config['files_path'] . $file['path'], 'r');
+
+			//get file type
+			$finfo = finfo_open(FILEINFO_MIME_TYPE);
+			$fileType = finfo_file($finfo, $this->container->config['files_path'] . $file['path']);
+			finfo_close($finfo);
+
+			return $response->withBody($newStream)->withHeader('Content-Type', $fileType);
+		}else{
+			return $this->container['notFoundHandler']($request, $response);
+		}
+	}
+
+	/***
+	 * Get information about a file
+	 *
+	 * request: GET
+	 *
+	 * @param ServerRequestInterface $request
+	 * @param ResponseInterface $response
+	 * @param $args
+	 * @return mixed
+	 */
 	public function show(ServerRequestInterface $request, ResponseInterface $response, $args)
 	{
 		//verify if file exist
@@ -80,6 +163,13 @@ class FilesApiController extends Controller
 			'uuid' => $args['uuid']
 		]);
 		if (!empty($file)) {
+			//if the file is private
+			if ($file['private'] AND $file['user'] != $_SERVER['PHP_AUTH_USER']){
+				return $response->withStatus(401)->withJson([
+					'success' => false,
+					'error' => 'Not authorised'
+				]);
+			}
 			return $response->withJson([
 				'uuid' => $file['uuid'],
 				'name' => $file['file_name'],
@@ -93,11 +183,22 @@ class FilesApiController extends Controller
 		}
 	}
 
+	/**
+	 * Delete a file
+	 *
+	 * request: DELETE
+	 *
+	 * @param ServerRequestInterface $request
+	 * @param ResponseInterface $response
+	 * @param $args
+	 * @return mixed
+	 */
 	public function destroy(ServerRequestInterface $request, ResponseInterface $response, $args)
 	{
-		//verify if file exist
-		$file = $this->db->fetchRow('SELECT uuid, path FROM files WHERE uuid = :uuid', [
-			'uuid' => $args['uuid']
+		//verify if file exist and if the file is owned by user
+		$file = $this->db->fetchRow('SELECT uuid, path FROM files WHERE uuid = :uuid AND user = :user', [
+			'uuid' => $args['uuid'],
+			'user' => $_SERVER['PHP_AUTH_USER']
 		]);
 		if (!empty($file)) {
 			//do delete in bdd
