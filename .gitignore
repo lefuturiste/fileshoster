@@ -4,3 +4,4 @@ vendor
 composer.lock
 .env
 files
+auth.yml
