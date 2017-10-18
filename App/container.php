@@ -1,5 +1,6 @@
 <?php
 // Get container
+
 $container = $app->getContainer();
 
 $container['config'] = function ($container) use ($config) {
@@ -22,5 +23,23 @@ $container['mysql'] = function ($container) {
 };
 
 $container['uploader'] = function ($container){
-	return new \Uploader\Uploader($container->config['files_path']);
+	return new \Uploader\Uploader(	$container->config['files_path']);
+};
+
+$container['view'] = function ($container) use ($app) {
+	$dir = dirname(__DIR__);
+	$view = new \Slim\Views\Twig($dir . '/App/views', [
+		'cache' => false //$dir . 'tmp/cache' OR '../tmp/cache'
+	]);
+	$twig = $view->getEnvironment();
+//	$twig->addExtension(new \App\TwigExtension($container));
+
+
+	$engine = new \Aptoma\Twig\Extension\MarkdownEngine\MichelfMarkdownEngine();
+	$twig->addExtension(new \Aptoma\Twig\Extension\MarkdownExtension($engine));
+	// Instantiate and add Slim specific extension
+	$basePath = rtrim(str_ireplace('index.php', '', $container['request']->getUri()->getBasePath()), '/');
+	$view->addExtension(new Slim\Views\TwigExtension($container['router'], $basePath));
+
+	return $view;
 };

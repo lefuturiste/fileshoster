@@ -1,0 +1,16 @@
+{% extends 'templates/default.twig' %}
+{% block content %}
+    {% if extension != 'md' %}
+
+        {% markdown %}
+        ```{{ extension }}
+        {{ content }}
+        ```
+        {% endmarkdown %}
+    {% endif %}
+    {% if extension == 'md' %}
+
+        {{ content|markdown }}
+
+    {% endif %}
+{% endblock %}

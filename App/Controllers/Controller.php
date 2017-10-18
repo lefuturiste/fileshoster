@@ -15,4 +15,8 @@ class Controller
 		$this->db = $container->mysql;
 		$this->container = $container;
 	}
+
+	public function render($response, $template, $params = []){
+		return $this->container->view->render($response, $template, $params);
+	}
 }

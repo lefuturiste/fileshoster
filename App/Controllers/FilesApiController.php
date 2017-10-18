@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Time;
+use Michelf\Markdown;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Uploader\Uploader;
@@ -73,18 +74,7 @@ class FilesApiController extends Controller
 		}
 	}
 
-	/**
-	 * Get true file
-	 *
-	 * request: GET
-	 *
-	 * @param ServerRequestInterface $request
-	 * @param ResponseInterface $response
-	 * @param $args
-	 * @return static
-	 */
-	public function file(ServerRequestInterface $request, ResponseInterface $response, $args)
-	{
+	public function pretty(ServerRequestInterface $request, ResponseInterface $response, $args){
 		//verify is file is good
 		$file = $this->db->fetchRow('SELECT * FROM files WHERE uuid = :uuid', [
 			'uuid' => $args['uuid']
@@ -92,19 +82,41 @@ class FilesApiController extends Controller
 		if (!empty($file)) {
 			//if the file is private
 			if ($file['private']) {
-				return $response->withStatus(401)->withJson([
-					'success' => false,
-					'error' => 'Not authorised'
-				]);
+				if (isset($_SERVER['PHP_AUTH_USER'])){
+					if ($file['user'] != $_SERVER['PHP_AUTH_USER']){
+						return $response->withStatus(401)->withJson([
+							'success' => false,
+							'error' => 'Not authorised'
+						]);
+					}
+				}else{
+					return $response->withStatus(401)->withJson([
+						'success' => false,
+						'error' => 'Not authorised'
+					]);
+				}
 			}
-			$newStream = new \GuzzleHttp\Psr7\LazyOpenStream($this->container->config['files_path'] . $file['path'], 'r');
 
-			//get file type
-			$finfo = finfo_open(FILEINFO_MIME_TYPE);
-			$fileType = finfo_file($finfo, $this->container->config['files_path'] . $file['path']);
-			finfo_close($finfo);
+			//if the file will be pretty
+			$prettyExtensions = [
+				'md',
+				'txt'
+			];
+			if (in_array($file['extension'], $prettyExtensions)){
+				return $this->render($response, 'md.twig', [
+					'content' => file_get_contents($this->container->config['files_path'] . $file['path']),
+					'extension' => $file['extension']
+				]);
+			}else {
+				$newStream = new \GuzzleHttp\Psr7\LazyOpenStream($this->container->config['files_path'] . $file['path'], 'r');
 
-			return $response->withBody($newStream)->withHeader('Content-Type', $fileType);
+				//get file type
+				$finfo = finfo_open(FILEINFO_MIME_TYPE);
+				$fileType = finfo_file($finfo, $this->container->config['files_path'] . $file['path']);
+				finfo_close($finfo);
+
+				return $response->withBody($newStream)->withHeader('Content-Type', $fileType)->withHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
+			}
 		}else{
 			return $this->container['notFoundHandler']($request, $response);
 		}
@@ -133,14 +145,14 @@ class FilesApiController extends Controller
 					]);
 				}
 			}
+
 			$newStream = new \GuzzleHttp\Psr7\LazyOpenStream($this->container->config['files_path'] . $file['path'], 'r');
 
 			//get file type
 			$finfo = finfo_open(FILEINFO_MIME_TYPE);
 			$fileType = finfo_file($finfo, $this->container->config['files_path'] . $file['path']);
 			finfo_close($finfo);
-
-			return $response->withBody($newStream)->withHeader('Content-Type', $fileType);
+			return $response->withBody($newStream)->withHeader('Content-Type', $fileType)->withHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
 		}else{
 			return $this->container['notFoundHandler']($request, $response);
 		}
