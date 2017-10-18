@@ -22,6 +22,7 @@ require '../App/container.php';
 $app->get('/', \App\Controllers\ApiController::class . ':getHome')->setName('home');
 $app->get('/{uuid}', \App\Controllers\FilesApiController::class . ':pretty')->setName('files.public_infos');
 $app->get('/{uuid}/download', \App\Controllers\FilesApiController::class . ':download')->setName('files.public_download');
+$app->get('/{uuid}.{extension}', \App\Controllers\FilesApiController::class . ':download');
 
 $app->group('/api', function (){
 	$this->group('/files', function (){
