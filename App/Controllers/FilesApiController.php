@@ -68,7 +68,7 @@ class FilesApiController extends Controller
 				'name' => $name,
 				'path' => str_replace('/', '', $upload->getDestination()),
 				'url' => $this->container->config['base_url'] . '/' . $uuid,
-				'direct_url' => $this->container->config['base_url'] . '/direct/' . $uuid . $upload->getExtension()
+				'direct_url' => $this->container->config['base_url'] . '/direct/' . $uuid . '.' . $upload->getExtension()
 			]);
 		} catch (Exception $e) {
 			echo $e->getMessage();
