@@ -125,7 +125,7 @@ class FilesApiController extends Controller
 				]);
 			} else {
 				//redirect to alias
-				return $response->withHeader('Location', $this->container->config['base_url'] . '/download/' . $file['token'] . '.' . $file['extension'])
+				return $response->withHeader('Location', $this->container->config['base_url'] . '/direct/' . $file['token'] . '.' . $file['extension'])
 					->withStatus(302);
 			}
 		} else {
@@ -158,7 +158,7 @@ class FilesApiController extends Controller
 			}
 
 			//redirect to alias
-			return $response->withHeader('Location', $this->container->config['base_url'] . '/download/' . $file['token'] . '.' . $file['extension'])
+			return $response->withHeader('Location', $this->container->config['base_url'] . '/direct/' . $file['token'] . '.' . $file['extension'])
 				->withStatus(302);
 		} else {
 			return $this->container['notFoundHandler']($request, $response);
