@@ -22,13 +22,11 @@ require '../App/container.php';
 $app->get('/', \App\Controllers\ApiController::class . ':getHome')->setName('home');
 $app->get('/{uuid}', \App\Controllers\FilesApiController::class . ':pretty')->setName('files.public_infos');
 $app->get('/{uuid}/download', \App\Controllers\FilesApiController::class . ':download')->setName('files.public_download');
-$app->get('/direct/{uuid}.{extension}', \App\Controllers\FilesApiController::class . ':download');
 
 $app->group('/api', function (){
 	$this->group('/files', function (){
 		$this->post('/', \App\Controllers\FilesApiController::class . ':store')->setName('files.store');
 		$this->get('/{uuid}', \App\Controllers\FilesApiController::class . ':show')->setName('files.show');
-		$this->get('/{uuid}/view', \App\Controllers\FilesApiController::class . ':view')->setName('files.view');
 		$this->get('/{uuid}/download', \App\Controllers\FilesApiController::class . ':download')->setName('files.download');
 		$this->delete('/{uuid}', \App\Controllers\FilesApiController::class . ':destroy')->setName('files.destroy');
 	});

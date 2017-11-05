@@ -117,6 +117,7 @@ class SetupCommand extends Command
   `extension` varchar(255) DEFAULT '0',
   `private` varchar(255) DEFAULT '0',
   `user` varchar(255) DEFAULT '0',
+  `token` varchar(255) DEFAULT '0',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)

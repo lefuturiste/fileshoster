@@ -24,18 +24,30 @@ class FilesApiController extends Controller
 	 */
 	public function store(ServerRequestInterface $request, ResponseInterface $response)
 	{
-		if (isset($request->getParsedBody()['private'])){
+		if (isset($request->getParsedBody()['private'])) {
 			$private = $request->getParsedBody()['private'];
-		}else{
+		} else {
 			$private = false;
 		}
 
 		$uuid = uniqid();
 		$uploader = $this->container->uploader;
 
+		$token = substr(
+			strtoupper(
+				hash('sha256', serialize([
+					$uuid,
+					rtrim(base64_encode(md5(microtime())), "="),
+					$_SERVER['PHP_AUTH_USER'],
+					Time::now(),
+					$private,
+					rand(10, 9999)
+				]))), 0, 20
+		);
+
 		$upload = $uploader
 			->with($_FILES['file'])
-			->setFilename($uuid)
+			->setFilename($token)
 			->setOverwrite(true)
 			->setCreateDir(true)
 			->setExtension(function ($upload) {
@@ -55,6 +67,7 @@ class FilesApiController extends Controller
 				'extension' => $upload->getExtension(),
 				'path' => str_replace('/', '', $upload->getDestination()),
 				'private' => $private,
+				'token' => $token,
 				'user' => $_SERVER['PHP_AUTH_USER'],
 				'created_at' => Time::now()
 			]);
@@ -64,6 +77,7 @@ class FilesApiController extends Controller
 				'created' => true,
 				'uuid' => $uuid,
 				'user' => $_SERVER['PHP_AUTH_USER'],
+				'token' => $token,
 				'extension' => $upload->getExtension(),
 				'name' => $name,
 				'path' => str_replace('/', '', $upload->getDestination()),
@@ -75,7 +89,8 @@ class FilesApiController extends Controller
 		}
 	}
 
-	public function pretty(ServerRequestInterface $request, ResponseInterface $response, $args){
+	public function pretty(ServerRequestInterface $request, ResponseInterface $response, $args)
+	{
 		//verify is file is good
 		$file = $this->db->fetchRow('SELECT * FROM files WHERE uuid = :uuid', [
 			'uuid' => $args['uuid']
@@ -83,14 +98,14 @@ class FilesApiController extends Controller
 		if (!empty($file)) {
 			//if the file is private
 			if ($file['private']) {
-				if (isset($_SERVER['PHP_AUTH_USER'])){
-					if ($file['user'] != $_SERVER['PHP_AUTH_USER']){
+				if (isset($_SERVER['PHP_AUTH_USER'])) {
+					if ($file['user'] != $_SERVER['PHP_AUTH_USER']) {
 						return $response->withStatus(401)->withJson([
 							'success' => false,
 							'error' => 'Not authorised'
 						]);
 					}
-				}else{
+				} else {
 					return $response->withStatus(401)->withJson([
 						'success' => false,
 						'error' => 'Not authorised'
@@ -103,22 +118,17 @@ class FilesApiController extends Controller
 				'md',
 				'txt'
 			];
-			if (in_array($file['extension'], $prettyExtensions)){
+			if (in_array($file['extension'], $prettyExtensions)) {
 				return $this->render($response, 'md.twig', [
 					'content' => file_get_contents($this->container->config['files_path'] . $file['path']),
 					'extension' => $file['extension']
 				]);
-			}else {
-				$newStream = new \GuzzleHttp\Psr7\LazyOpenStream($this->container->config['files_path'] . $file['path'], 'r');
-
-				//get file type
-				$finfo = finfo_open(FILEINFO_MIME_TYPE);
-				$fileType = finfo_file($finfo, $this->container->config['files_path'] . $file['path']);
-				finfo_close($finfo);
-
-				return $response->withBody($newStream)->withHeader('Content-Type', $fileType)->withHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
+			} else {
+				//redirect to alias
+				return $response->withHeader('Location', $this->container->config['base_url'] . '/download/' . $file['token'] . '.' . $file['extension'])
+					->withStatus(302);
 			}
-		}else{
+		} else {
 			return $this->container['notFoundHandler']($request, $response);
 		}
 	}
@@ -132,14 +142,14 @@ class FilesApiController extends Controller
 		if (!empty($file)) {
 			//if the file is private
 			if ($file['private']) {
-				if (isset($_SERVER['PHP_AUTH_USER'])){
-					if ($file['user'] != $_SERVER['PHP_AUTH_USER']){
+				if (isset($_SERVER['PHP_AUTH_USER'])) {
+					if ($file['user'] != $_SERVER['PHP_AUTH_USER']) {
 						return $response->withStatus(401)->withJson([
 							'success' => false,
 							'error' => 'Not authorised'
 						]);
 					}
-				}else{
+				} else {
 					return $response->withStatus(401)->withJson([
 						'success' => false,
 						'error' => 'Not authorised'
@@ -147,14 +157,10 @@ class FilesApiController extends Controller
 				}
 			}
 
-			$newStream = new \GuzzleHttp\Psr7\LazyOpenStream($this->container->config['files_path'] . $file['path'], 'r');
-
-			//get file type
-			$finfo = finfo_open(FILEINFO_MIME_TYPE);
-			$fileType = finfo_file($finfo, $this->container->config['files_path'] . $file['path']);
-			finfo_close($finfo);
-			return $response->withBody($newStream)->withHeader('Content-Type', $fileType)->withHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
-		}else{
+			//redirect to alias
+			return $response->withHeader('Location', $this->container->config['base_url'] . '/download/' . $file['token'] . '.' . $file['extension'])
+				->withStatus(302);
+		} else {
 			return $this->container['notFoundHandler']($request, $response);
 		}
 	}
@@ -177,21 +183,23 @@ class FilesApiController extends Controller
 		]);
 		if (!empty($file)) {
 			//if the file is private
-			if ($file['private'] AND $file['user'] != $_SERVER['PHP_AUTH_USER']){
+			if ($file['private'] AND $file['user'] != $_SERVER['PHP_AUTH_USER']) {
 				return $response->withStatus(401)->withJson([
 					'success' => false,
 					'error' => 'Not authorised'
 				]);
 			}
+
 			return $response->withJson([
 				'uuid' => $file['uuid'],
 				'name' => $file['file_name'],
+				'token' => $file['token'],
 				'url' => $this->container->config['base_url'] . '/' . $file['uuid'],
 				'extension' => $file['extension'],
 				'path' => $file['path'],
 				'created_at' => $file['created_at']
 			]);
-		}else{
+		} else {
 			return $this->container['notFoundHandler']($request, $response);
 		}
 	}
@@ -225,7 +233,7 @@ class FilesApiController extends Controller
 				'success' => true,
 				'deleted' => true
 			]);
-		}else{
+		} else {
 			return $this->container['notFoundHandler']($request, $response);
 		}
 	}
