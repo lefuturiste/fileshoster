@@ -227,7 +227,7 @@ class FilesApiController extends Controller
 				'uuid' => $args['uuid']
 			]);
 			//do delete in file
-			unlink($file['path']);
+			unlink($this->container->config['files_path'] . $file['path']);
 
 			return $response->withJson([
 				'success' => true,
